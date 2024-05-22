@@ -53,6 +53,12 @@
         "thread": "cpp",
         "cinttypes": "cpp",
         "fstream": "cpp",
-        "sstream": "cpp"
+        "sstream": "cpp",
+        "format": "cpp",
+        "charconv": "cpp",
+        "codecvt": "cpp",
+        "iomanip": "cpp",
+        "span": "cpp",
+        "variant": "cpp"
     }
 }

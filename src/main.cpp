@@ -1,8 +1,7 @@
-//------- Ignore this ----------
 #include <filesystem>
 namespace fs = std::filesystem;
-//------------------------------
 
+#include <string>
 #include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -11,16 +10,15 @@ namespace fs = std::filesystem;
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "Texture.h"
-#include "shaderClass.h"
-#include "VAO.h"
-#include "VBO.h"
-#include "EBO.h"
+#include <Texture.h>
+#include <Shader.h>
+#include <VAO.h>
+#include <VBO.h>
+#include <EBO.h>
 
 
 const unsigned int width = 800;
 const unsigned int height = 800;
-
 
 // Vertices coordinates
 GLfloat vertices[] =
@@ -43,7 +41,27 @@ GLuint indices[] =
 	3, 0, 4
 };
 
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    // make sure the viewport matches the new window dimensions; note that width and 
+    // height will be significantly larger than specified on retina displays.
+    glViewport(0, 0, width, height);
+}
 
+void processInput(GLFWwindow *window)
+{
+    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+
+    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+}
 
 int main()
 {
@@ -59,7 +77,7 @@ int main()
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	// Create a GLFWwindow object of 800 by 800 pixels, naming it "YoutubeOpenGL"
-	GLFWwindow* window = glfwCreateWindow(width, height, "YoutubeOpenGL", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(width, height, "", NULL, NULL);
 	// Error check if the window fails to create
 	if (window == NULL)
 	{
@@ -69,6 +87,9 @@ int main()
 	}
 	// Introduce the window into the current context
 	glfwMakeContextCurrent(window);
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	//Turn off vsync
+	glfwSwapInterval(0);
 
 	//Load GLAD so it configures OpenGL
 	gladLoadGL();
@@ -76,12 +97,8 @@ int main()
 	// In this case the viewport goes from x = 0, y = 0, to x = 800, y = 800
 	glViewport(0, 0, width, height);
 
-
-
 	// Generates Shader object using shaders default.vert and default.frag
 	Shader shaderProgram("shader/default.vert", "shader/default.frag");
-
-
 
 	// Generates Vertex Array Object and binds it
 	VAO vao;
@@ -104,33 +121,40 @@ int main()
 	// Gets ID of uniform called "scale"
 	GLuint uniID = glGetUniformLocation(shaderProgram.ID, "scale");
 
-	/*
-	* I'm doing this relative path thing in order to centralize all the resources into one folder and not
-	* duplicate them between tutorial folders. You can just copy paste the resources from the 'Resources'
-	* folder and then give a relative path from this folder to whatever resource you want to get to.
-	* Also note that this requires C++17, so go to Project Properties, C/C++, Language, and select C++17
-	*/
-	std::string parentDir = (fs::current_path().fs::path::parent_path()).string();
-	std::string texPath = "/Resources/YoutubeOpenGL 7 - Going 3D/";
-
-	// Texture
-	Texture brickTex((parentDir + texPath + "brick.png").c_str(), GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE);
+	// Sets the texture
+	Texture brickTex("textures/brick.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE);
 	brickTex.texUnit(shaderProgram, "tex0", 0);
-
-	// Original code from the tutorial
-	/*Texture brickTex("brick.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE);
-	brickTex.texUnit(shaderProgram, "tex0", 0);*/
 
 	// Variables that help the rotation of the pyramid
 	float rotation = 0.0f;
-	double prevTime = glfwGetTime();
 
 	// Enables the Depth Buffer
 	glEnable(GL_DEPTH_TEST);
 
+	// FPS counter setups
+	double lastFrameTime = glfwGetTime();
+	double lastSecondTime = lastFrameTime;
+
 	// Main while loop
 	while (!glfwWindowShouldClose(window))
 	{
+    	// FPS counter
+    	double currentFrameTime = glfwGetTime();
+		// Delta time
+    	double deltaTime = currentFrameTime - lastFrameTime;
+		double fps = 1 / deltaTime;
+    	lastFrameTime = currentFrameTime;
+
+		if (currentFrameTime - lastSecondTime >= 0.5)
+    	{
+			glfwSetWindowTitle(window, (std::to_string(static_cast<int>(fps)) + " FPS").c_str());
+			lastSecondTime += 0.5;
+		}
+
+
+		//Input handling
+		processInput(window);
+
 		// Specify the color of the background
 		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
 		// Clean the back buffer and depth buffer
@@ -138,13 +162,8 @@ int main()
 		// Tell OpenGL which Shader Program we want to use
 		shaderProgram.Activate();
 
-		// Simple timer
-		double crntTime = glfwGetTime();
-		if (crntTime - prevTime >= 1 / 60)
-		{
-			rotation += 0.5f;
-			prevTime = crntTime;
-		}
+		// Rotate pyramid
+		rotation += 50.0f * deltaTime;
 
 		// Initializes matrices so they are not the null matrix
 		glm::mat4 model = glm::mat4(1.0f);
@@ -172,6 +191,7 @@ int main()
 		vao.Bind();
 		// Draw primitives, number of indices, datatype of indices, index of indices
 		glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(int), GL_UNSIGNED_INT, 0);
+
 		// Swap the back buffer with the front buffer
 		glfwSwapBuffers(window);
 		// Take care of all GLFW events
