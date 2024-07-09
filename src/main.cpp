@@ -19,6 +19,7 @@ namespace fs = std::filesystem;
 
 const unsigned int width = 800;
 const unsigned int height = 800;
+bool vsync = true;
 
 // Vertices coordinates
 GLfloat vertices[] =
@@ -88,8 +89,7 @@ int main()
 	// Introduce the window into the current context
 	glfwMakeContextCurrent(window);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-	//Turn off vsync
-	glfwSwapInterval(0);
+	glfwSwapInterval(vsync ? 1 : 0);
 
 	//Load GLAD so it configures OpenGL
 	gladLoadGL();
